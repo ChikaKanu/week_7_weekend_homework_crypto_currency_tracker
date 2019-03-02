@@ -2,7 +2,9 @@ const CurrencyView = function (){};
 
 CurrencyView.prototype.createCryptoCurrencyItem = function (crypto) {
   const cryptoCurrencyDetail = document.createElement('div');
-  cryptoCurrencyDetail.classList.add('crypto-detail');
+
+  const cryptoList = document.querySelector(`#crypto-list`);
+  cryptoList.appendChild(cryptoCurrencyDetail)
 
   const name = document.createElement('h3');
   name.textContent = crypto.name;
@@ -32,7 +34,8 @@ CurrencyView.prototype.createCryptoCurrencyItem = function (crypto) {
   detailList.appendChild(price_change_24h);
 
   cryptoCurrencyDetail.appendChild(detailList);
-  return cryptoCurrencyDetail;
+
+
 };
 
 CurrencyView.prototype.createDetailListItem = function (label, property) {
