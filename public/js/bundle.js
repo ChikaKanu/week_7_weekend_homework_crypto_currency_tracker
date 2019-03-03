@@ -93,7 +93,7 @@
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("const CryptoCurrency = __webpack_require__(/*! ./models/crypto_currency.js */ \"./src/models/crypto_currency.js\");\nconst CurrencyListView = __webpack_require__(/*! ./views/currency_list_view.js */ \"./src/views/currency_list_view.js\");\n\ndocument.addEventListener('DOMContentLoaded', () => {\n  const listContainer = document.querySelector('div#crypto-list')\n  const selectView = new CurrencyListView(listContainer);\n  selectView.bindEvents();\n\n  const cryptoCurrency = new CryptoCurrency;\n  cryptoCurrency.getData();\n\n\n\n});\n\n\n//# sourceURL=webpack:///./src/app.js?");
+eval("const CryptoCurrency = __webpack_require__(/*! ./models/crypto_currency.js */ \"./src/models/crypto_currency.js\");\nconst CurrencyListView = __webpack_require__(/*! ./views/currency_list_view.js */ \"./src/views/currency_list_view.js\");\nconst CryptoPriceChange = __webpack_require__(/*! ./views/crypto_price_change.js */ \"./src/views/crypto_price_change.js\");\nconst SecondCryptoSelection = __webpack_require__(/*! ./views/second_crypto_selection.js */ \"./src/views/second_crypto_selection.js\");\nconst ThirdCryptoSelection = __webpack_require__(/*! ./views/third_crypto_selection.js */ \"./src/views/third_crypto_selection.js\");\n\ndocument.addEventListener('DOMContentLoaded', () => {\n  const selectElement = document.querySelector('#crypto-select1');\n  const selectCryptoPriceView = new CryptoPriceChange(selectElement);\n  selectCryptoPriceView.bindEvents();\n\n  const selectElementTwo = document.querySelector('#crypto-select2');\n  const selectCryptoPriceViewTwo = new SecondCryptoSelection(selectElementTwo);\n  selectCryptoPriceViewTwo.bindEvents();\n\n  const selectElementThree = document.querySelector('#crypto-select3');\n  const selectCryptoPriceViewThree = new ThirdCryptoSelection(selectElementThree);\n  selectCryptoPriceViewThree.bindEvents();\n\n  const listContainer = document.querySelector('div#crypto-list');\n  const selectView = new CurrencyListView(listContainer);\n  selectView.bindEvents();\n\n  const cryptoCurrency = new CryptoCurrency;\n  cryptoCurrency.getData();\n\n\n\n});\n\n\n//# sourceURL=webpack:///./src/app.js?");
 
 /***/ }),
 
@@ -126,7 +126,18 @@ eval("const RequestHelper = function (url) {\n  this.url = url\n};\n\nRequestHel
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("const RequestHelper = __webpack_require__(/*! ../helpers/request_helper.js */ \"./src/helpers/request_helper.js\");\nconst PubSub = __webpack_require__(/*! ../helpers/pub_sub.js */ \"./src/helpers/pub_sub.js\");\n\nconst CryptoCurrency = function () {\n  this.cryptoCurrencydata = [];\n};\n\n\nCryptoCurrency.prototype.getData = function () {\n  const request = new RequestHelper('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd');\n  request.get().then((data) => {\n    this.cryptoCurrencydata = data;\n    PubSub.publish('CryptoCurrency:data-ready', this.cryptoCurrencydata);\n\n  });\n\n};\n\n\nmodule.exports = CryptoCurrency;\n\n\n//# sourceURL=webpack:///./src/models/crypto_currency.js?");
+eval("const RequestHelper = __webpack_require__(/*! ../helpers/request_helper.js */ \"./src/helpers/request_helper.js\");\nconst PubSub = __webpack_require__(/*! ../helpers/pub_sub.js */ \"./src/helpers/pub_sub.js\");\n\nconst CryptoCurrency = function () {\n  this.cryptoCurrencydata = [];\n  this.changePrice = [];\n};\n\n\nCryptoCurrency.prototype.getData = function () {\n  const request = new RequestHelper('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd');\n  request.get().then((data) => {\n    this.cryptoCurrencydata = data;\n    PubSub.publish('CryptoCurrency:data-ready', this.cryptoCurrencydata);\n    this.publishData(data);\n  });\n};\n\nCryptoCurrency.prototype.publishData = function (data) {\n  this.cryptoCurrencydata = data;\n  PubSub.publish('CryptoCurrency: change-in-price-data-ready', this.cryptoCurrencydata);\n};\n\nCryptoCurrency.prototype.bindEvents = function () {\n  PubSub.subscribe('CryptoPriceChange:change-first', (evt) => {\n    const firstSelectCrypto = evt.detail;\n  });\n\n  PubSub.subscribe('CryptoPriceChange:change-second', (evt) => {\n    const secondSelectCrypto = evt.detail;\n  });\n\n  PubSub.subscribe('CryptoPriceChange:change-third', (evt) => {\n    const thirdSelectCrypto = evt.detail;\n  });\n  console.log(thirdSelectCrypto);\n};\n\nmodule.exports = CryptoCurrency;\n\n\n//# sourceURL=webpack:///./src/models/crypto_currency.js?");
+
+/***/ }),
+
+/***/ "./src/views/crypto_price_change.js":
+/*!******************************************!*\
+  !*** ./src/views/crypto_price_change.js ***!
+  \******************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+eval("const PubSub = __webpack_require__(/*! ../helpers/pub_sub.js */ \"./src/helpers/pub_sub.js\");\nconst CryptoCurrency = __webpack_require__(/*! ../models/crypto_currency.js */ \"./src/models/crypto_currency.js\");\n\nconst CryptoPriceChange = function (element) {\n  this.element = element;\n};\n\n\nCryptoPriceChange.prototype.bindEvents = function () {\n  PubSub.subscribe('CryptoCurrency: change-in-price-data-ready', (evt) => {\n    this.populateSelect(evt.detail)\n  });\n\n  this.element.addEventListener('change', (evt) => {\n    const selectedIndex = evt.target.value;\n    PubSub.publish('CryptoPriceChange:change', selectedIndex);\n  });\n\n  this.element.addEventListener('change', (evt) => {\n    const selectedIndex = evt.target.value;\n    PubSub.publish('CryptoPriceChange:change-first', selectedIndex);\n  });\n};\n\nCryptoPriceChange.prototype.populateSelect = function (cryptos, index) {\n  cryptos.forEach((crypto, index) => {\n    const option = document.createElement('option');\n    option.textContent = crypto.name;\n    option.value = index;\n    this.element.appendChild(option);\n  });\n};\n\n\nmodule.exports = CryptoPriceChange\n\n\n//# sourceURL=webpack:///./src/views/crypto_price_change.js?");
 
 /***/ }),
 
@@ -149,6 +160,28 @@ eval("const PubSub = __webpack_require__(/*! ../helpers/pub_sub.js */ \"./src/he
 /***/ (function(module, exports) {
 
 eval("const CurrencyView = function (){};\n\nCurrencyView.prototype.createCryptoCurrencyItem = function (crypto) {\n  const cryptoCurrencyDetail = document.createElement('div');\n\n  const cryptoList = document.querySelector(`#crypto-list`);\n  cryptoList.appendChild(cryptoCurrencyDetail)\n\n  const name = document.createElement('h3');\n  name.textContent = crypto.name;\n  cryptoCurrencyDetail.appendChild(name);\n\n  const detailList = document.createElement('ul');\n\n  const id = this.createDetailListItem(\"id\", crypto.id);\n  detailList.appendChild(id);\n\n  const symbol = this.createDetailListItem(\"symbol\", crypto.symbol);\n  detailList.appendChild(symbol);\n\n  const current_price = this.createDetailListItem(\"current_price\", crypto.current_price);\n  detailList.appendChild(current_price);\n\n  const market_cap_rank = this.createDetailListItem(\"market_cap_rank\", crypto.market_cap_rank);\n  detailList.appendChild(market_cap_rank);\n\n  const high_24h = this.createDetailListItem(\"high_24h\", crypto.high_24h);\n  detailList.appendChild(high_24h);\n\n  const low_24h = this.createDetailListItem(\"low_24h\", crypto.low_24h);\n  detailList.appendChild(low_24h);\n\n  const price_change_24h = this.createDetailListItem(\"price_change_24h\", crypto.price_change_24h);\n  detailList.appendChild(price_change_24h);\n\n  cryptoCurrencyDetail.appendChild(detailList);\n\n\n};\n\nCurrencyView.prototype.createDetailListItem = function (label, property) {\n  const element = document.createElement('li');\n  element.textContent = `${label}: ${property}`;\n  return element;\n};\n\n\n\nmodule.exports = CurrencyView;\n\n\n//# sourceURL=webpack:///./src/views/currency_view.js?");
+
+/***/ }),
+
+/***/ "./src/views/second_crypto_selection.js":
+/*!**********************************************!*\
+  !*** ./src/views/second_crypto_selection.js ***!
+  \**********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+eval("const PubSub = __webpack_require__(/*! ../helpers/pub_sub.js */ \"./src/helpers/pub_sub.js\");\nconst CryptoCurrency = __webpack_require__(/*! ../models/crypto_currency.js */ \"./src/models/crypto_currency.js\");\n\nconst SecondCryptoSelection = function (element) {\n  this.element = element;\n};\n\n\nSecondCryptoSelection.prototype.bindEvents = function () {\n  PubSub.subscribe('CryptoCurrency: change-in-price-data-ready', (evt) => {\n    this.populateSelect(evt.detail)\n  });\n\n  this.element.addEventListener('change', (evt) => {\n    const selectedIndex = evt.target.value;\n    PubSub.publish('CryptoPriceChange:change-second', selectedIndex);\n  });\n};\n\nSecondCryptoSelection.prototype.populateSelect = function (cryptos, index) {\n  cryptos.forEach((crypto, index) => {\n    const option = document.createElement('option');\n    option.textContent = crypto.name;\n    option.value = index;\n    this.element.appendChild(option);\n  });\n};\n\n\nmodule.exports = SecondCryptoSelection;\n\n\n//# sourceURL=webpack:///./src/views/second_crypto_selection.js?");
+
+/***/ }),
+
+/***/ "./src/views/third_crypto_selection.js":
+/*!*********************************************!*\
+  !*** ./src/views/third_crypto_selection.js ***!
+  \*********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+eval("const PubSub = __webpack_require__(/*! ../helpers/pub_sub.js */ \"./src/helpers/pub_sub.js\");\nconst CryptoCurrency = __webpack_require__(/*! ../models/crypto_currency.js */ \"./src/models/crypto_currency.js\");\n\nconst ThirdCryptoSelection = function (element) {\n  this.element = element;\n};\n\n\nThirdCryptoSelection.prototype.bindEvents = function () {\n  PubSub.subscribe('CryptoCurrency: change-in-price-data-ready', (evt) => {\n    this.populateSelect(evt.detail)\n  });\n\n  this.element.addEventListener('change', (evt) => {\n    const selectedIndex = evt.target.value;\n    PubSub.publish('CryptoPriceChange:change-third', selectedIndex);\n  });\n};\n\nThirdCryptoSelection.prototype.populateSelect = function (cryptos, index) {\n  cryptos.forEach((crypto, index) => {\n    const option = document.createElement('option');\n    option.textContent = crypto.name;\n    option.value = index;\n    this.element.appendChild(option);\n  });\n};\n\n\nmodule.exports = ThirdCryptoSelection;\n\n\n//# sourceURL=webpack:///./src/views/third_crypto_selection.js?");
 
 /***/ })
 
