@@ -20,6 +20,18 @@ CryptoPriceChange.prototype.bindEvents = function () {
     const selectedIndex = evt.target.value;
     PubSub.publish('CryptoPriceChange:change-first', selectedIndex);
   });
+
+  this.element.addEventListener('change', (evt) => {
+    const selectedIndex = evt.target.value;
+    PubSub.publish('CryptoPriceChange:change-second', selectedIndex);
+  });
+
+  this.element.addEventListener('change', (evt) => {
+    const selectedIndex = evt.target.value;
+    PubSub.publish('CryptoPriceChange:change-third', selectedIndex);
+  });
+
+  
 };
 
 CryptoPriceChange.prototype.populateSelect = function (cryptos, index) {

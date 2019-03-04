@@ -2,38 +2,41 @@ const RequestHelper = require('../helpers/request_helper.js');
 const PubSub = require('../helpers/pub_sub.js');
 
 const CryptoCurrency = function () {
-  this.cryptoCurrencydata = [];
+  this.cryptoCurrencyData = [];
   this.changePrice = [];
 };
+
 
 
 CryptoCurrency.prototype.getData = function () {
   const request = new RequestHelper('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd');
   request.get().then((data) => {
-    this.cryptoCurrencydata = data;
-    PubSub.publish('CryptoCurrency:data-ready', this.cryptoCurrencydata);
+    this.cryptoCurrencyData = data;
+    PubSub.publish('CryptoCurrency:data-ready', this.cryptoCurrencyData);
     this.publishData(data);
-  });
-};
 
-CryptoCurrency.prototype.publishData = function (data) {
-  this.cryptoCurrencydata = data;
-  PubSub.publish('CryptoCurrency: change-in-price-data-ready', this.cryptoCurrencydata);
-};
+    PubSub.subscribe('CryptoPriceChange:change-first', (evt) => {
+      const selectedCryptoDetailFirst = this.cryptoCurrencyData[evt.detail];
+      PubSub.publish('CryptoCurrency:first-crypto-selected', selectedCryptoDetailFirst);
+    });
 
-CryptoCurrency.prototype.bindEvents = function () {
-  PubSub.subscribe('CryptoPriceChange:change-first', (evt) => {
-    const firstSelectCrypto = evt.detail;
+    PubSub.subscribe('CryptoPriceChange:change-second', (evt) => {
+      const selectedCryptoDetailSecond = this.cryptoCurrencyData[evt.detail];
+      PubSub.publish('CryptoCurrency:second-crypto-selected', selectedCryptoDetailSecond);
+    });
+
+    PubSub.subscribe('CryptoPriceChange:change-third', (evt) => {
+      const selectedCryptoDetailThird = this.cryptoCurrencyData[evt.detail];
+      PubSub.publish('CryptoCurrency:third-crypto-selected', selectedCryptoDetailThird);
+    });
   });
 
-  PubSub.subscribe('CryptoPriceChange:change-second', (evt) => {
-    const secondSelectCrypto = evt.detail;
-  });
+  CryptoCurrency.prototype.publishData = function (data) {
+    this.cryptoCurrencyData = data;
+    PubSub.publish('CryptoCurrency: change-in-price-data-ready', this.cryptoCurrencyData);
+  };
 
-  PubSub.subscribe('CryptoPriceChange:change-third', (evt) => {
-    const thirdSelectCrypto = evt.detail;
-  });
-  console.log(thirdSelectCrypto);
+
 };
 
 module.exports = CryptoCurrency;
